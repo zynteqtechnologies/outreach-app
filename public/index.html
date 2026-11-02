@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Outreach</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/outreach-logo.svg">
+<link rel="alternate icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#c2410c">
+<meta name="apple-mobile-web-app-title" content="Outreach">
+<meta name="application-name" content="Outreach">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff7ed;--card:#fff;--tx:#431407;--mu:#78513f;--ln:#f1dcc9;--ac:#c2410c;--tile:#ffe8d1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px 'DM Sans',system-ui,Arial,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+.h{font-family:Fraunces,Georgia,serif;font-weight:700;letter-spacing:-.5px;margin:0}
+.wrap{max-width:480px;margin:auto}
+[hidden]{display:none!important}
+section{display:none;padding:20px 16px 190px}
+section.on{display:block}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rf{width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--ln);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rf svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rf.spin svg{animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.rf.spin svg{animation:none}}
+.mu{color:var(--mu);font-size:13px}
+.tiles{display:flex;gap:8px;margin:14px 0 12px}
+.tile{flex:1;background:var(--tile);border-radius:14px;padding:12px}
+.tile b{display:block;font:600 28px Fraunces,Georgia,serif}
+.tile span{font-size:12px;color:var(--mu)}
+.row{display:flex;gap:8px;margin-bottom:12px}
+.btn{flex:1;min-height:46px;border-radius:12px;border:1px solid var(--ln);background:var(--card);font-weight:600;font-size:14px;cursor:pointer}
+.btn.on,.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.sm{flex:none;min-height:44px;padding:0 16px;font-weight:500;background:transparent;margin-top:10px;margin-right:8px}
+.btn:disabled{opacity:.6}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font:600 18px Fraunces,Georgia,serif;margin:0}
+.card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.in{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--ln);background:var(--card);padding:0 14px;font-size:16px}
+textarea.in{padding:10px 14px;min-height:150px;line-height:1.5;margin-top:8px}
+label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
+.f{margin-bottom:12px}
+.chip{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.new{background:#ffe8d1;color:#7c2d12}.drafted{background:#fef3c7;color:#713f12}.sent{background:#dcfce7;color:#14532d}
+.failed{background:#fee2e2;color:#7f1d1d}.unsubscribed,.skipped{background:#e7e5e4;color:#292524}
+.err{color:#7f1d1d;font-size:12px;margin-top:8px}
+.empty{text-align:center;color:var(--mu);padding:40px 0}
+.bar{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg);border-top:1px solid var(--ln)}
+#send{bottom:calc(76px + env(safe-area-inset-bottom));padding:10px 16px}
+#send .btn{width:100%;min-height:52px;font-size:16px;border-radius:14px}
+nav{bottom:0;display:flex;gap:4px;padding:8px 12px calc(10px + env(safe-area-inset-bottom))}
+nav button{flex:1;min-height:58px;border:0;border-radius:14px;background:transparent;color:var(--mu);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;cursor:pointer}
+nav button.on{background:var(--tile);color:var(--ac);font-weight:700}
+nav svg,.logo svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 24px}
+.logo{width:64px;height:64px;border-radius:20px;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+#toast{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);background:var(--tx);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center;z-index:9}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="login" hidden>
+  <img src="/outreach-logo.svg" alt="Outreach" width="68" height="68" style="display:block;border-radius:18px;margin-bottom:20px;box-shadow:0 6px 18px rgba(194,65,12,0.22)">
+  <h1 class="h" style="font-size:36px">Outreach</h1>
+  <p class="mu" style="font-size:15px;margin:4px 0 28px">Sign in to review today's emails.</p>
+  <div class="f"><label for="le">Email</label><input class="in" id="le" type="email" autocomplete="username" style="min-height:52px"></div>
+  <div class="f"><label for="lp">Password</label><input class="in" id="lp" type="password" autocomplete="current-password" style="min-height:52px"></div>
+  <div class="err" id="lerr" role="alert"></div>
+  <button class="btn pri" id="lb" style="flex:none;width:100%;min-height:54px;font-size:16px;margin-top:10px">Sign in</button>
+  <p class="mu" style="text-align:center;margin-top:18px;font-size:12px">Private app for one user. There is no sign-up.</p>
+</div>
+
+<div id="app" hidden>
+<section id="s-drafts" class="on">
+  <div class="hd"><div style="display:flex;align-items:center;gap:10px"><img src="/outreach-logo.svg" alt="" width="32" height="32" style="border-radius:8px"><h1 class="h" style="font-size:30px">Drafts</h1></div><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
+  <div class="mu" id="today"></div>
+  <div class="tiles"><div class="tile"><b id="n-ready">0</b><span>Ready</span></div><div class="tile"><b id="n-wait">0</b><span>Waiting</span></div><div class="tile"><b id="n-sent">0</b><span>Sent</span></div></div>
+  <div class="row"><button class="btn" id="bfind">Find clients</button><button class="btn" id="bcsv">Import CSV</button></div>
+  <div class="row"><button class="btn" id="bgen">Make drafts</button></div>
+  <input type="file" id="csv" accept=".csv" hidden>
+  <div id="drafts"></div>
+</section>
+<section id="s-sent">
+  <div class="hd"><h1 class="h" style="font-size:30px">Sent</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
+  <div class="mu" id="sent-sub"></div>
+  <div class="row" style="margin-top:14px" id="sent-f"><button class="btn on" data-f="all">All</button><button class="btn" data-f="sent">Sent</button><button class="btn" data-f="failed">Failed</button></div>
+  <div id="sent"></div>
+</section>
+<section id="s-leads">
+  <div class="hd"><h1 class="h" style="font-size:30px">Leads</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
+  <div class="mu" id="leads-sub"></div>
+  <div class="f" style="margin-top:14px"><label for="q" style="position:absolute;left:-9999px">Search businesses</label><input class="in" id="q" placeholder="Search businesses" style="min-height:48px"></div>
+  <div id="leads"></div>
+</section>
+<section id="s-settings">
+  <div class="hd"><h1 class="h" style="font-size:30px">Settings</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
+  <div class="mu" style="margin-bottom:14px">What the app finds and sends</div>
+  <div class="f"><label for="sq">Business type to find</label><input class="in" id="sq" placeholder="dental clinic"></div>
+  <div class="f"><label for="sc">City</label><input class="in" id="sc" placeholder="Vadodara"></div>
+  <div class="row"><div class="f" style="flex:1"><label for="sd">Emails per day</label><input class="in" id="sd" type="number" min="1" max="30"></div><div class="f" style="flex:1"><label for="st">Send time</label><input class="in" id="st" type="time"></div></div>
+  <div class="f"><label for="sn">Your name</label><input class="in" id="sn"></div>
+  <div class="f"><label for="so">Company</label><input class="in" id="so"></div>
+  <div class="f"><label for="sv">Your service</label><input class="in" id="sv" placeholder="websites, apps and digital marketing"></div>
+  <button class="btn pri" id="bsave" style="flex:none;width:100%;min-height:52px;font-size:16px">Save settings</button>
+  <p class="mu" style="font-size:12px">Your email password and API keys stay private on your server, never in the app.</p>
+  <button class="btn" id="bout" style="flex:none;width:100%;margin-top:8px">Sign out</button>
+</section>
+<div class="bar" id="send"><button class="btn pri" id="bsend">Send all</button></div>
+<nav class="bar" id="nav">
+  <button data-t="drafts" class="on"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Drafts</button>
+  <button data-t="sent"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>Sent</button>
+  <button data-t="leads"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 010 6.8"/><path d="M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/></svg>Leads</button>
+  <button data-t="settings"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h5M15 6h5M4 12h9M19 12h1M4 18h3M13 18h7"/><circle cx="12" cy="6" r="2.2"/><circle cx="16" cy="12" r="2.2"/><circle cx="10" cy="18" r="2.2"/></svg>Settings</button>
+</nav>
+</div>
+</div>
+<div id="toast" role="status"></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LABEL = { new: 'Waiting', drafted: 'Ready', sent: 'Sent', failed: 'Failed', unsubscribed: 'Unsubscribed', skipped: 'Skipped' };
+let T = localStorage.getItem('t'), L = [], ST = {}, filt = 'all', busy = false;
+
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3500); }
+async function api(url, method = 'GET', body) {
+  const r = await fetch(url, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + T }, body: body && JSON.stringify(body) });
+  if (r.status === 401 && url !== '/api/login') { signOut(); throw new Error('signed out'); }
+  return r.json();
+}
+function signOut() { localStorage.removeItem('t'); T = null; $('#app').hidden = true; $('#login').hidden = false; }
+
+async function login() {
+  $('#lerr').textContent = '';
+  const r = await api('/api/login', 'POST', { email: $('#le').value, password: $('#lp').value });
+  if (!r.token) { $('#lerr').textContent = r.error || 'Could not sign in'; return; }
+  T = r.token; localStorage.setItem('t', T); $('#lp').value = ''; start();
+}
+async function start() {
+  $('#login').hidden = true; $('#app').hidden = false;
+  $('#today').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+  await refresh(); fillSettings(); tab('drafts');
+}
+async function refresh() { L = await api('/api/leads'); ST = await api('/api/settings'); render(); }
+const count = (s) => L.filter((l) => l.status === s).length;
+const chip = (s) => `<span class="chip ${s}">${LABEL[s] || s}</span>`;
+
+function render() {
+  $('#n-ready').textContent = count('drafted'); $('#n-wait').textContent = count('new'); $('#n-sent').textContent = count('sent');
+  $('#bsend').textContent = count('drafted') ? `Send all ${count('drafted')} emails` : 'Send all';
+  const d = L.filter((l) => ['drafted', 'failed'].includes(l.status));
+  $('#drafts').innerHTML = d.length ? d.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}${l.city ? ' · ' + esc(l.city) : ''}</div></div>${chip(l.status)}</div>
+    ${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}
+    <textarea class="in" style="min-height:46px;height:46px;margin-top:10px;padding-top:11px" aria-label="Subject" onchange="edit('${esc(l.id)}',{subject:this.value})">${esc(l.subject)}</textarea>
+    <textarea class="in" aria-label="Message" onchange="edit('${esc(l.id)}',{body:this.value})">${esc(l.body)}</textarea>
+    <button class="btn sm" onclick="setStatus('${esc(l.id)}','skipped')">Discard</button></div>`).join('')
+    : '<div class="empty">No drafts yet.<br>Tap “Find clients”, then “Make drafts”.</div>';
+  const s = L.filter((l) => ['sent', 'failed'].includes(l.status) && (filt === 'all' || l.status === filt))
+    .sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || '')));
+  $('#sent-sub').textContent = `${count('sent')} sent · ${count('failed')} failed`;
+  $('#sent').innerHTML = s.length ? s.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}${l.sentAt ? ' · ' + new Date(l.sentAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : ''}</div></div>${chip(l.status)}</div>${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}</div>`).join('') : '<div class="empty">Nothing here yet.</div>';
+  const q = $('#q').value.trim().toLowerCase();
+  const ls = L.filter((l) => !q || (l.name + ' ' + l.email).toLowerCase().includes(q));
+  $('#leads-sub').textContent = `${L.length} businesses found`;
+  $('#leads').innerHTML = ls.length ? ls.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}</div></div>${chip(l.status)}</div>
+    ${l.status === 'unsubscribed' ? `<div class="mu" style="margin-top:8px">Never emailed again.</div><button class="btn sm" onclick="setStatus('${esc(l.id)}','new')">Restore</button>` : `<button class="btn sm" onclick="setStatus('${esc(l.id)}','unsubscribed')">Mark unsubscribed</button>`}</div>`).join('') : '<div class="empty">No businesses yet.</div>';
+}
+function fillSettings() { const m = { sq: 'query', sc: 'city', sd: 'daily', st: 'time', sn: 'name', so: 'company', sv: 'service' }; for (const k in m) $('#' + k).value = ST[m[k]] || ''; }
+async function saveSettings() {
+  ST = await api('/api/settings', 'PUT', { query: $('#sq').value, city: $('#sc').value, daily: $('#sd').value, time: $('#st').value, name: $('#sn').value, company: $('#so').value, service: $('#sv').value });
+  fillSettings(); toast('Settings saved');
+}
+const edit = (id, d) => api('/api/leads/' + id, 'PUT', d);
+async function setStatus(id, status) { await edit(id, { status }); await refresh(); }
+
+async function run(btn, label, fn) {
+  if (busy) return; busy = true; const old = btn.textContent; btn.disabled = true; btn.textContent = label;
+  try { await fn(); } catch (e) { if (e.message !== 'signed out') toast('Something went wrong. Try again.'); }
+  busy = false; btn.disabled = false; btn.textContent = old; if (T) await refresh();
+}
+$('#bfind').onclick = () => {
+  if (!ST.query || !ST.city) { toast('Set business type and city in Settings first'); return tab('settings'); }
+  run($('#bfind'), 'Finding… 1-2 min', async () => { const r = await api('/api/find', 'POST', { query: ST.query, city: ST.city, count: ST.daily }); toast(r.error ? r.error : `${r.added} new clients found with email`); });
+};
+$('#bgen').onclick = () => run($('#bgen'), 'Writing…', async () => { const r = await api('/api/generate', 'POST', { count: ST.daily }); toast(`${r.drafted} drafts ready`); });
+$('#bsend').onclick = () => {
+  const n = count('drafted');
+  if (!n) return toast('No drafts to send');
+  if (!confirm(`Send ${n} emails now?`)) return;
+  run($('#bsend'), 'Sending… keep this open', async () => { const r = await api('/api/send-all', 'POST'); toast(`Sent ${r.sent}, failed ${r.failed}`); });
+};
+function parseCSV(t) {
+  const rows = []; let row = [], c = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"' && t[i + 1] === '"') { c += '"'; i++; } else if (ch === '"') q = false; else c += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(c); c = ''; }
+    else if (ch === '\n') { row.push(c); rows.push(row); row = []; c = ''; }
+    else if (ch !== '\r') c += ch;
+  }
+  if (c || row.length) { row.push(c); rows.push(row); }
+  const h = rows.shift().map((x) => x.trim().toLowerCase());
+  return rows.map((r) => Object.fromEntries(h.map((k, i) => [k, (r[i] || '').trim()])));
+}
+$('#bcsv').onclick = () => $('#csv').click();
+$('#csv').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = await api('/api/import', 'POST', { rows: parseCSV(await f.text()) });
+  e.target.value = ''; toast(`${r.added} new leads added`); refresh();
+};
+function tab(t) {
+  document.querySelectorAll('section').forEach((s) => s.classList.toggle('on', s.id === 's-' + t));
+  document.querySelectorAll('#nav button').forEach((b) => { b.classList.toggle('on', b.dataset.t === t); b.setAttribute('aria-current', b.dataset.t === t ? 'page' : 'false'); });
+  $('#send').hidden = t !== 'drafts'; window.scrollTo(0, 0);
+}
+document.querySelectorAll('#nav button').forEach((b) => (b.onclick = () => tab(b.dataset.t)));
+document.querySelectorAll('#sent-f button').forEach((b) => (b.onclick = () => { filt = b.dataset.f; document.querySelectorAll('#sent-f button').forEach((x) => x.classList.toggle('on', x === b)); render(); }));
+async function reload(btn) {
+  if (btn.classList.contains('spin')) return;
+  btn.classList.add('spin');
+  try { await refresh(); if ($('#s-settings').classList.contains('on')) fillSettings(); toast('Updated'); }
+  catch (e) { if (e.message !== 'signed out') toast("Couldn't refresh. Check your connection."); }
+  btn.classList.remove('spin');
+}
+document.querySelectorAll('.rf').forEach((b) => (b.onclick = () => reload(b)));
+$('#q').oninput = render; $('#bsave').onclick = saveSettings; $('#bout').onclick = signOut; $('#lb').onclick = login;
+$('#lp').onkeydown = (e) => { if (e.key === 'Enter') login(); };
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+if (T) start().catch(() => {}); else $('#login').hidden = false;
+</script>
+</body>
+</html>
