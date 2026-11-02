@@ -204,10 +204,19 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // ---------- sending ----------
-const mailer = () => nodemailer.createTransport({
-  host: E.SMTP_HOST, port: Number(E.SMTP_PORT) || 465, secure: true,
-  auth: { user: E.SMTP_USER, pass: E.SMTP_PASS },
-});
+const mailer = () => {
+  const host = (E.SMTP_HOST === 'smtp.zoho.com' ? 'smtp.zoho.in' : E.SMTP_HOST) || 'smtp.zoho.in';
+  const port = Number(E.SMTP_PORT) || 465;
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user: E.SMTP_USER, pass: E.SMTP_PASS },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+};
 
 app.post('/api/send-all', async (req, res) => {
   const db = load();
