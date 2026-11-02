@@ -19,6 +19,9 @@ const SECRET = E.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const sign = (exp) => crypto.createHmac('sha256', SECRET).update(String(exp)).digest('hex');
 const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 let fails = 0, lockUntil = 0;
+// ---------- health check / keep-alive endpoint ----------
+app.get('/api/ping', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
 app.post('/api/login', (req, res) => {
   if (Date.now() < lockUntil) return res.status(429).json({ error: 'Too many tries. Wait 5 minutes.' });
   const { email = '', password = '' } = req.body || {};
@@ -318,4 +321,17 @@ cron.schedule('* * * * *', async () => {
   console.log(`[daily] ${await generateDrafts(c.daily)} drafts ready`);
 });
 
-app.listen(E.PORT || 3000, () => console.log('Running on http://localhost:' + (E.PORT || 3000)));
+app.listen(E.PORT || 3000, () => {
+  const port = E.PORT || 3000;
+  console.log('Running on http://localhost:' + port);
+  const targetUrl = E.APP_URL || E.RENDER_EXTERNAL_URL;
+  if (targetUrl) {
+    console.log('[keep-alive] Self-ping enabled for:', targetUrl);
+    setInterval(async () => {
+      try {
+        const pingUrl = targetUrl.replace(/\/+$/, '') + '/api/ping';
+        await fetch(pingUrl);
+      } catch (_) {}
+    }, 14 * 60 * 1000);
+  }
+});
