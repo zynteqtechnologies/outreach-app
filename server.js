@@ -252,8 +252,68 @@ async function findEmail(site) {
   const list = [...found];
   return list.find((e) => e.endsWith('@' + host) || e.endsWith('.' + host)) || list[0] || null;
 }
+async function findLeadsWithGroq(query, city, want) {
+  if (!E.GROQ_API_KEY) throw new Error('GROQ_API_KEY missing in .env');
+  const prompt = `You are a B2B business researcher for Zynteq Technologies.
+Find ${want} real, active businesses in ${city} belonging to the category: "${query}".
+For each business, provide:
+- name: The real business or clinic name
+- email: Official contact email
+- website: Their website URL
+- category: "${query}"
+- city: "${city}"
+- notes: One specific digital improvement need (e.g. modern website, online booking, SEO)
+
+Reply ONLY with valid JSON with a "leads" array:
+{"leads":[{"name":"...","email":"...","website":"...","category":"${query}","city":"${city}","notes":"..."}]}`;
+
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'authorization': 'Bearer ' + E.GROQ_API_KEY,
+    },
+    body: JSON.stringify({
+      model: E.GROQ_MODEL || 'openai/gpt-oss-120b',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7,
+    }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+  const txt = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '{}';
+  const parsed = JSON.parse(txt);
+  const rows = Array.isArray(parsed) ? parsed : (parsed.leads || parsed.businesses || []);
+
+  const db = load();
+  const have = new Set(db.leads.map((l) => (l.email || '').toLowerCase()));
+  let added = 0;
+  for (const item of rows) {
+    const email = (item.email || '').trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email) || have.has(email)) continue;
+    have.add(email);
+    db.leads.push({
+      id: Date.now() + '-g' + added,
+      name: item.name || '',
+      email,
+      website: item.website || '',
+      category: item.category || query,
+      city: item.city || city,
+      notes: item.notes || '',
+      status: 'new',
+    });
+    added++;
+  }
+  save(db);
+  return added;
+}
+
 async function findLeads(query, city, want) {
-  if (!E.GOOGLE_PLACES_API_KEY) throw new Error('GOOGLE_PLACES_API_KEY missing in .env');
+  const isGoogleKeyValid = E.GOOGLE_PLACES_API_KEY && !E.GOOGLE_PLACES_API_KEY.includes('your-google-places-key');
+  if (!isGoogleKeyValid) {
+    return await findLeadsWithGroq(query, city, want);
+  }
   const db = load();
   db.seen = db.seen || [];
   const seen = new Set(db.seen);
