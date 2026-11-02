@@ -46,6 +46,7 @@ section.on{display:block}
 .card h3{font:600 18px Fraunces,Georgia,serif;margin:0}
 .card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .in{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--ln);background:var(--card);padding:0 14px;font-size:16px}
+select.in{cursor:pointer;appearance:auto;padding-right:28px}
 textarea.in{padding:10px 14px;min-height:150px;line-height:1.5;margin-top:8px}
 label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
 .f{margin-bottom:12px}
@@ -105,12 +106,36 @@ nav svg,.logo svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:
 <section id="s-settings">
   <div class="hd"><h1 class="h" style="font-size:30px">Settings</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
   <div class="mu" style="margin-bottom:14px">What the app finds and sends</div>
-  <div class="f"><label for="sq">Business type to find</label><input class="in" id="sq" placeholder="dental clinic"></div>
-  <div class="f"><label for="sc">City</label><input class="in" id="sc" placeholder="Vadodara"></div>
+  <div class="f">
+    <label for="sq_sel">Business type to find</label>
+    <select class="in" id="sq_sel"></select>
+    <input class="in" id="sq_custom" placeholder="Type custom business type..." style="display:none;margin-top:6px">
+  </div>
+  <div class="f">
+    <label for="s_country">Country</label>
+    <select class="in" id="s_country"></select>
+    <input class="in" id="s_country_custom" placeholder="Type custom country..." style="display:none;margin-top:6px">
+  </div>
+  <div class="row">
+    <div class="f" style="flex:1">
+      <label for="s_state">State / Province</label>
+      <select class="in" id="s_state"></select>
+      <input class="in" id="s_state_custom" placeholder="Type custom state..." style="display:none;margin-top:6px">
+    </div>
+    <div class="f" style="flex:1">
+      <label for="s_city">City</label>
+      <select class="in" id="s_city"></select>
+      <input class="in" id="s_city_custom" placeholder="Type custom city..." style="display:none;margin-top:6px">
+    </div>
+  </div>
   <div class="row"><div class="f" style="flex:1"><label for="sd">Emails per day</label><input class="in" id="sd" type="number" min="1" max="30"></div><div class="f" style="flex:1"><label for="st">Send time</label><input class="in" id="st" type="time"></div></div>
   <div class="f"><label for="sn">Your name</label><input class="in" id="sn"></div>
   <div class="f"><label for="so">Company</label><input class="in" id="so"></div>
-  <div class="f"><label for="sv">Your service</label><input class="in" id="sv" placeholder="websites, apps and digital marketing"></div>
+  <div class="f">
+    <label for="sv_sel">Your service</label>
+    <select class="in" id="sv_sel"></select>
+    <textarea class="in" id="sv_custom" placeholder="Type custom service description..." style="display:none;margin-top:6px;min-height:90px"></textarea>
+  </div>
   <button class="btn pri" id="bsave" style="flex:none;width:100%;min-height:52px;font-size:16px">Save settings</button>
   <p class="mu" style="font-size:12px">Your email password and API keys stay private on your server, never in the app.</p>
   <button class="btn" id="bout" style="flex:none;width:100%;margin-top:8px">Sign out</button>
@@ -176,10 +201,266 @@ function render() {
   $('#leads').innerHTML = ls.length ? ls.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}</div></div>${chip(l.status)}</div>
     ${l.status === 'unsubscribed' ? `<div class="mu" style="margin-top:8px">Never emailed again.</div><button class="btn sm" onclick="setStatus('${esc(l.id)}','new')">Restore</button>` : `<button class="btn sm" onclick="setStatus('${esc(l.id)}','unsubscribed')">Mark unsubscribed</button>`}</div>`).join('') : '<div class="empty">No businesses yet.</div>';
 }
-function fillSettings() { const m = { sq: 'query', sc: 'city', sd: 'daily', st: 'time', sn: 'name', so: 'company', sv: 'service' }; for (const k in m) $('#' + k).value = ST[m[k]] || ''; }
+const GEO = {
+  "India": {
+    "Gujarat": ["Vadodara", "Ahmedabad", "Surat", "Rajkot", "Gandhinagar", "Bhavnagar", "Jamnagar", "Anand", "Bharuch", "Vapi", "Navsari", "Valsad", "Mehsana", "Morbi", "Junagadh", "Porbandar"],
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Navi Mumbai", "Solapur", "Kolhapur"],
+    "Delhi NCR": ["New Delhi", "Gurugram", "Noida", "Faridabad", "Ghaziabad", "Greater Noida"],
+    "Karnataka": ["Bengaluru", "Mysuru", "Hubballi-Dharwad", "Mangaluru", "Belagavi"],
+    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Secunderabad"],
+    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem"],
+    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer"],
+    "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Prayagraj", "Meerut"],
+    "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior"],
+    "West Bengal": ["Kolkata", "Siliguri", "Asansol", "Durgapur"],
+    "Punjab": ["Chandigarh", "Ludhiana", "Amritsar", "Jalandhar"],
+    "Haryana": ["Chandigarh", "Gurugram", "Faridabad", "Panipat", "Ambala"],
+    "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur"],
+    "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa"]
+  },
+  "United Arab Emirates (UAE)": {
+    "Dubai": ["Dubai", "Deira", "Bur Dubai", "Downtown Dubai", "Business Bay", "Jumeirah", "Dubai Marina"],
+    "Abu Dhabi": ["Abu Dhabi", "Al Ain", "Al Dhafra", "Musaffah"],
+    "Sharjah": ["Sharjah", "Khor Fakkan", "Kalba"],
+    "Ajman": ["Ajman"],
+    "Ras Al Khaimah": ["Ras Al Khaimah"],
+    "Fujairah": ["Fujairah"]
+  },
+  "Saudi Arabia": {
+    "Riyadh Region": ["Riyadh", "Al Kharj"],
+    "Makkah Region": ["Jeddah", "Mecca", "Taif"],
+    "Eastern Province": ["Dammam", "Khobar", "Jubail", "Dhahran"]
+  },
+  "Qatar": {
+    "Doha": ["Doha", "West Bay", "The Pearl", "Lusail"]
+  },
+  "United States": {
+    "California": ["Los Angeles", "San Francisco", "San Diego", "San Jose", "Sacramento"],
+    "Texas": ["Houston", "Dallas", "Austin", "San Antonio"],
+    "New York": ["New York City", "Brooklyn", "Buffalo", "Albany"],
+    "Florida": ["Miami", "Orlando", "Tampa", "Jacksonville"]
+  },
+  "United Kingdom": {
+    "England": ["London", "Manchester", "Birmingham", "Leeds", "Liverpool"],
+    "Scotland": ["Edinburgh", "Glasgow"]
+  },
+  "Canada": {
+    "Ontario": ["Toronto", "Ottawa", "Mississauga", "Brampton"],
+    "British Columbia": ["Vancouver", "Surrey", "Richmond"]
+  },
+  "Australia": {
+    "New South Wales": ["Sydney", "Newcastle"],
+    "Victoria": ["Melbourne", "Geelong"]
+  }
+};
+
+const CATEGORIES = [
+  "Dental Clinic",
+  "Hospitals & Medical Clinics",
+  "Eye Care & Opticians",
+  "Diagnostic & Pathology Labs",
+  "Ayurvedic & Homeopathy Clinics",
+  "Restaurants, Cafes & Bakeries",
+  "Real Estate Agencies & Builders",
+  "Gyms, Yoga & Fitness Centers",
+  "Retail Stores & Supermarkets",
+  "Salons, Spas & Beauty Parlours",
+  "Hotels, Resorts & Homestays",
+  "Chartered Accountants & Tax Consultants",
+  "Lawyers & Legal Firms",
+  "Schools, Colleges & Coaching Institutes",
+  "Manufacturing & Industrial Companies",
+  "Car Showrooms & Auto Garages",
+  "Interior Designers & Architects",
+  "Travel Agencies & Tour Operators",
+  "Trading & Wholesale Businesses",
+  "Jewellery Stores & Showrooms",
+  "IT & Software Companies"
+];
+
+const SERVICES = [
+  "websites, apps and digital marketing for local businesses",
+  "custom web design and local SEO to attract more clients",
+  "custom ERP, CRM and business management software",
+  "e-commerce store development and online marketing",
+  "POS billing systems and inventory software",
+  "mobile app development for iOS and Android",
+  "Google Maps SEO and local lead generation",
+  "AI automations, chatbots and WhatsApp marketing"
+];
+
+function initDropdowns() {
+  const sqSel = $('#sq_sel');
+  sqSel.innerHTML = CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+    `<option value="__custom__">➕ Add custom business type...</option>`;
+  sqSel.onchange = () => {
+    const isCust = sqSel.value === '__custom__';
+    $('#sq_custom').style.display = isCust ? 'block' : 'none';
+    if (isCust) $('#sq_custom').focus();
+  };
+
+  const svSel = $('#sv_sel');
+  svSel.innerHTML = SERVICES.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('') +
+    `<option value="__custom__">➕ Add custom service...</option>`;
+  svSel.onchange = () => {
+    const isCust = svSel.value === '__custom__';
+    $('#sv_custom').style.display = isCust ? 'block' : 'none';
+    if (isCust) $('#sv_custom').focus();
+  };
+
+  const sCountry = $('#s_country');
+  sCountry.innerHTML = Object.keys(GEO).map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+    `<option value="__custom__">➕ Other country...</option>`;
+  sCountry.onchange = () => updateStates();
+}
+
+function updateStates(prefState, prefCity) {
+  const cVal = $('#s_country').value;
+  const isCustCountry = cVal === '__custom__';
+  $('#s_country_custom').style.display = isCustCountry ? 'block' : 'none';
+  if (isCustCountry) {
+    $('#s_state').style.display = 'none';
+    $('#s_state_custom').style.display = 'block';
+    $('#s_city').style.display = 'none';
+    $('#s_city_custom').style.display = 'block';
+    return;
+  }
+  $('#s_state').style.display = 'block';
+  $('#s_city').style.display = 'block';
+
+  const states = GEO[cVal] ? Object.keys(GEO[cVal]) : [];
+  const sState = $('#s_state');
+  sState.innerHTML = states.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('') +
+    `<option value="__custom__">➕ Other state...</option>`;
+
+  if (prefState && states.includes(prefState)) {
+    sState.value = prefState;
+    $('#s_state_custom').style.display = 'none';
+  } else if (prefState) {
+    sState.value = '__custom__';
+    $('#s_state_custom').value = prefState;
+    $('#s_state_custom').style.display = 'block';
+  } else {
+    $('#s_state_custom').style.display = 'none';
+  }
+
+  sState.onchange = () => {
+    const isCustState = sState.value === '__custom__';
+    $('#s_state_custom').style.display = isCustState ? 'block' : 'none';
+    if (isCustState) {
+      $('#s_city').style.display = 'none';
+      $('#s_city_custom').style.display = 'block';
+    } else {
+      $('#s_city').style.display = 'block';
+      updateCities();
+    }
+  };
+
+  updateCities(prefCity);
+}
+
+function updateCities(prefCity) {
+  const cVal = $('#s_country').value;
+  const sVal = $('#s_state').value;
+  if (cVal === '__custom__' || sVal === '__custom__') {
+    $('#s_city').style.display = 'none';
+    $('#s_city_custom').style.display = 'block';
+    return;
+  }
+  $('#s_city').style.display = 'block';
+  const cities = (GEO[cVal] && GEO[cVal][sVal]) || [];
+  const sCity = $('#s_city');
+  sCity.innerHTML = cities.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+    `<option value="__custom__">➕ Other city...</option>`;
+
+  if (prefCity && cities.includes(prefCity)) {
+    sCity.value = prefCity;
+    $('#s_city_custom').style.display = 'none';
+  } else if (prefCity) {
+    sCity.value = '__custom__';
+    $('#s_city_custom').value = prefCity;
+    $('#s_city_custom').style.display = 'block';
+  } else {
+    $('#s_city_custom').style.display = 'none';
+  }
+
+  sCity.onchange = () => {
+    const isCust = sCity.value === '__custom__';
+    $('#s_city_custom').style.display = isCust ? 'block' : 'none';
+    if (isCust) $('#s_city_custom').focus();
+  };
+}
+
+function fillSettings() {
+  if (!$('#sq_sel').options.length) initDropdowns();
+
+  const q = ST.query || 'Dental Clinic';
+  const matchCat = CATEGORIES.find((c) => c.toLowerCase() === q.toLowerCase());
+  if (matchCat) {
+    $('#sq_sel').value = matchCat;
+    $('#sq_custom').style.display = 'none';
+  } else {
+    $('#sq_sel').value = '__custom__';
+    $('#sq_custom').value = q;
+    $('#sq_custom').style.display = 'block';
+  }
+
+  const sv = ST.service || '';
+  const matchSv = SERVICES.find((s) => s.toLowerCase() === sv.toLowerCase());
+  if (matchSv) {
+    $('#sv_sel').value = matchSv;
+    $('#sv_custom').style.display = 'none';
+  } else if (sv) {
+    $('#sv_sel').value = '__custom__';
+    $('#sv_custom').value = sv;
+    $('#sv_custom').style.display = 'block';
+  } else {
+    $('#sv_sel').value = SERVICES[0];
+    $('#sv_custom').style.display = 'none';
+  }
+
+  const country = ST.country || 'India';
+  const state = ST.state || 'Gujarat';
+  const city = ST.city || 'Vadodara';
+
+  if (GEO[country]) {
+    $('#s_country').value = country;
+    $('#s_country_custom').style.display = 'none';
+    updateStates(state, city);
+  } else {
+    $('#s_country').value = '__custom__';
+    $('#s_country_custom').value = country;
+    $('#s_country_custom').style.display = 'block';
+    $('#s_state').style.display = 'none';
+    $('#s_state_custom').value = state;
+    $('#s_state_custom').style.display = 'block';
+    $('#s_city').style.display = 'none';
+    $('#s_city_custom').value = city;
+    $('#s_city_custom').style.display = 'block';
+  }
+
+  $('#sd').value = ST.daily || 10;
+  $('#st').value = ST.time || '10:00';
+  $('#sn').value = ST.name || '';
+  $('#so').value = ST.company || '';
+}
+
 async function saveSettings() {
-  ST = await api('/api/settings', 'PUT', { query: $('#sq').value, city: $('#sc').value, daily: $('#sd').value, time: $('#st').value, name: $('#sn').value, company: $('#so').value, service: $('#sv').value });
-  fillSettings(); toast('Settings saved');
+  const query = $('#sq_sel').value === '__custom__' ? $('#sq_custom').value.trim() : $('#sq_sel').value;
+  const country = $('#s_country').value === '__custom__' ? $('#s_country_custom').value.trim() : $('#s_country').value;
+  const state = ($('#s_state').style.display === 'none' || $('#s_state').value === '__custom__') ? $('#s_state_custom').value.trim() : $('#s_state').value;
+  const city = ($('#s_city').style.display === 'none' || $('#s_city').value === '__custom__') ? $('#s_city_custom').value.trim() : $('#s_city').value;
+  const service = $('#sv_sel').value === '__custom__' ? $('#sv_custom').value.trim() : $('#sv_sel').value;
+
+  ST = await api('/api/settings', 'PUT', {
+    query, country, state, city, service,
+    daily: $('#sd').value,
+    time: $('#st').value,
+    name: $('#sn').value,
+    company: $('#so').value,
+  });
+  fillSettings();
+  toast('Settings saved');
 }
 const edit = (id, d) => api('/api/leads/' + id, 'PUT', d);
 async function setStatus(id, status) { await edit(id, { status }); await refresh(); }

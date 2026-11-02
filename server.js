@@ -87,6 +87,7 @@ function S() {
   return {
     name: s.name || E.SENDER_NAME || '', company: s.company || E.COMPANY || '', service: s.service || E.SERVICE || '',
     query: s.query || E.TARGET_QUERY || '', city: s.city || E.TARGET_CITY || '',
+    state: s.state || '', country: s.country || '',
     daily: Number(s.daily || E.DAILY_COUNT) || 10, time: s.time || '10:00',
   };
 }
@@ -95,6 +96,7 @@ app.put('/api/settings', (req, res) => {
   const db = load(), b = req.body || {};
   db.settings = {
     name: b.name, company: b.company, service: b.service, query: b.query, city: b.city,
+    state: b.state, country: b.country,
     daily: Math.min(Math.max(Number(b.daily) || 10, 1), 30), time: /^\d\d:\d\d$/.test(b.time) ? b.time : '10:00',
   };
   save(db);
@@ -303,8 +305,9 @@ async function findEmail(site) {
 }
 async function findLeadsWithGroq(query, city, want) {
   if (!E.GROQ_API_KEY) throw new Error('GROQ_API_KEY missing in .env');
+  const loc = [city, S().state, S().country].filter(Boolean).join(', ') || city;
   const prompt = `You are a B2B business researcher for Zynteq Technologies.
-Find ${want} real, active businesses in ${city} belonging to the category: "${query}".
+Find ${want} real, active businesses in ${loc} belonging to the category: "${query}".
 For each business, provide:
 - name: The real business or clinic name
 - email: Official contact email
