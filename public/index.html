@@ -94,13 +94,22 @@ nav svg,.logo svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:
 <section id="s-sent">
   <div class="hd"><h1 class="h" style="font-size:30px">Sent</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
   <div class="mu" id="sent-sub"></div>
-  <div class="row" style="margin-top:14px" id="sent-f"><button class="btn on" data-f="all">All</button><button class="btn" data-f="sent">Sent</button><button class="btn" data-f="failed">Failed</button></div>
+  <div class="f" style="margin-top:14px"><label for="sq_sent" style="position:absolute;left:-9999px">Search sent</label><input class="in" id="sq_sent" placeholder="Search recipient or subject..." style="min-height:48px"></div>
+  <div class="row" style="margin-top:8px" id="sent-f"><button class="btn on" data-f="all">All</button><button class="btn" data-f="sent">Sent</button><button class="btn" data-f="failed">Failed</button></div>
   <div id="sent"></div>
 </section>
 <section id="s-leads">
   <div class="hd"><h1 class="h" style="font-size:30px">Leads</h1><button class="rf" aria-label="Refresh" title="Refresh"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg></button></div>
   <div class="mu" id="leads-sub"></div>
-  <div class="f" style="margin-top:14px"><label for="q" style="position:absolute;left:-9999px">Search businesses</label><input class="in" id="q" placeholder="Search businesses" style="min-height:48px"></div>
+  <div class="f" style="margin-top:14px"><label for="q" style="position:absolute;left:-9999px">Search businesses</label><input class="in" id="q" placeholder="Search by name, email, city, category..." style="min-height:48px"></div>
+  <div class="row" style="margin-top:8px;overflow-x:auto;padding-bottom:4px" id="leads-f">
+    <button class="btn on" data-lf="all" style="flex:none;padding:0 14px">All</button>
+    <button class="btn" data-lf="new" style="flex:none;padding:0 14px">Waiting</button>
+    <button class="btn" data-lf="drafted" style="flex:none;padding:0 14px">Ready</button>
+    <button class="btn" data-lf="sent" style="flex:none;padding:0 14px">Sent</button>
+    <button class="btn" data-lf="failed" style="flex:none;padding:0 14px">Failed</button>
+    <button class="btn" data-lf="unsubscribed" style="flex:none;padding:0 14px">Unsub</button>
+  </div>
   <div id="leads"></div>
 </section>
 <section id="s-settings">
@@ -191,15 +200,78 @@ function render() {
     ${l.status === 'failed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','drafted')">Reset</button>` : ''}
     <button class="btn sm" onclick="setStatus('${esc(l.id)}','skipped')">Discard</button></div>`).join('')
     : '<div class="empty">No drafts yet.<br>Tap “Find clients”, then “Make drafts”.</div>';
-  const s = L.filter((l) => ['sent', 'failed'].includes(l.status) && (filt === 'all' || l.status === filt))
-    .sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || '')));
+  const sqSent = ($('#sq_sent') ? $('#sq_sent').value : '').trim().toLowerCase();
+  const s = L.filter((l) => ['sent', 'failed'].includes(l.status) &&
+    (filt === 'all' || l.status === filt) &&
+    (!sqSent || (l.name + ' ' + l.email + ' ' + (l.subject || '')).toLowerCase().includes(sqSent))
+  ).sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || '')));
+
   $('#sent-sub').textContent = `${count('sent')} sent · ${count('failed')} failed`;
-  $('#sent').innerHTML = s.length ? s.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}${l.sentAt ? ' · ' + new Date(l.sentAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : ''}</div></div>${chip(l.status)}</div>${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}</div>`).join('') : '<div class="empty">Nothing here yet.</div>';
-  const q = $('#q').value.trim().toLowerCase();
-  const ls = L.filter((l) => !q || (l.name + ' ' + l.email).toLowerCase().includes(q));
-  $('#leads-sub').textContent = `${L.length} businesses found`;
-  $('#leads').innerHTML = ls.length ? ls.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}</div></div>${chip(l.status)}</div>
-    ${l.status === 'unsubscribed' ? `<div class="mu" style="margin-top:8px">Never emailed again.</div><button class="btn sm" onclick="setStatus('${esc(l.id)}','new')">Restore</button>` : `<button class="btn sm" onclick="setStatus('${esc(l.id)}','unsubscribed')">Mark unsubscribed</button>`}</div>`).join('') : '<div class="empty">No businesses yet.</div>';
+  $('#sent').innerHTML = s.length ? s.map((l) => `
+    <div class="card">
+      <div class="top">
+        <div>
+          <h3>${esc(l.name || l.email)}</h3>
+          <div class="mu">
+            To: <a href="mailto:${esc(l.email)}" style="color:inherit;font-weight:600">${esc(l.email)}</a>
+            ${l.city ? ' · 📍 ' + esc(l.city) : ''}
+          </div>
+          ${l.sentAt ? `<div class="mu" style="font-size:12px;margin-top:2px">📅 Sent: ${new Date(l.sentAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>` : ''}
+        </div>
+        ${chip(l.status)}
+      </div>
+      ${l.error ? `<div class="err" style="background:#fee2e2;padding:6px 10px;border-radius:8px;margin-top:8px">⚠️ <b>Failed reason:</b> ${esc(l.error)}</div>` : ''}
+      ${l.subject ? `
+        <div style="margin-top:10px;padding:10px;background:var(--tile);border-radius:10px">
+          <div style="font-weight:700;font-size:13px;color:var(--tx);margin-bottom:4px">Subject: ${esc(l.subject)}</div>
+          <div style="font-size:13px;line-height:1.45;color:var(--tx);white-space:pre-wrap;max-height:130px;overflow-y:auto">${esc(l.body)}</div>
+        </div>
+      ` : ''}
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        ${l.status === 'failed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','drafted');toast('Moved back to Drafts')">Retry Send</button>` : ''}
+        ${l.website ? `<a class="btn sm" href="${/^https?:/.test(l.website) ? esc(l.website) : 'https://' + esc(l.website)}" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center">🌐 Website</a>` : ''}
+      </div>
+    </div>
+  `).join('') : '<div class="empty">No sent emails found.</div>';
+
+  const leadFilt = window.leadFilt || 'all';
+  const q = ($('#q') ? $('#q').value : '').trim().toLowerCase();
+  const ls = L.filter((l) =>
+    (leadFilt === 'all' || l.status === leadFilt) &&
+    (!q || (l.name + ' ' + l.email + ' ' + (l.city || '') + ' ' + (l.category || '') + ' ' + (l.notes || '')).toLowerCase().includes(q))
+  );
+
+  $('#leads-sub').textContent = `${L.length} total businesses (${count('new')} waiting, ${count('drafted')} ready, ${count('sent')} sent)`;
+  $('#leads').innerHTML = ls.length ? ls.map((l) => `
+    <div class="card">
+      <div class="top">
+        <div>
+          <h3>${esc(l.name || l.email)}</h3>
+          <div class="mu">
+            <a href="mailto:${esc(l.email)}" style="color:inherit;font-weight:600">${esc(l.email)}</a>
+            ${l.city ? ' · 📍 ' + esc(l.city) : ''}
+          </div>
+          ${l.category ? `<div style="font-size:12px;color:var(--ac);font-weight:600;margin-top:2px">🏷️ ${esc(l.category)}</div>` : ''}
+        </div>
+        ${chip(l.status)}
+      </div>
+
+      ${l.notes ? `<div class="mu" style="font-size:13px;margin-top:8px;background:var(--bg);padding:8px 10px;border-radius:8px">💡 <b>Opportunity:</b> ${esc(l.notes)}</div>` : ''}
+
+      ${l.subject ? `
+        <div style="margin-top:8px;padding:8px 10px;background:var(--tile);border-radius:8px;font-size:13px">
+          <b>Subject:</b> ${esc(l.subject)}
+        </div>
+      ` : ''}
+
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${l.website ? `<a class="btn sm" href="${/^https?:/.test(l.website) ? esc(l.website) : 'https://' + esc(l.website)}" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center">🌐 Visit Site</a>` : ''}
+        ${l.status === 'new' ? `<button class="btn sm pri" onclick="setStatus('${esc(l.id)}','drafted');toast('Ready to write draft')">Draft Email</button>` : ''}
+        ${['drafted', 'failed'].includes(l.status) ? `<button class="btn sm" onclick="tab('drafts')">View in Drafts</button>` : ''}
+        ${l.status === 'unsubscribed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','new')">Restore</button>` : `<button class="btn sm" onclick="setStatus('${esc(l.id)}','unsubscribed')">Unsubscribe</button>`}
+      </div>
+    </div>
+  `).join('') : '<div class="empty">No businesses match your filter.</div>';
 }
 const GEO = {
   "India": {
@@ -508,6 +580,8 @@ function tab(t) {
 }
 document.querySelectorAll('#nav button').forEach((b) => (b.onclick = () => tab(b.dataset.t)));
 document.querySelectorAll('#sent-f button').forEach((b) => (b.onclick = () => { filt = b.dataset.f; document.querySelectorAll('#sent-f button').forEach((x) => x.classList.toggle('on', x === b)); render(); }));
+document.querySelectorAll('#leads-f button').forEach((b) => (b.onclick = () => { window.leadFilt = b.dataset.lf; document.querySelectorAll('#leads-f button').forEach((x) => x.classList.toggle('on', x === b)); render(); }));
+if ($('#sq_sent')) $('#sq_sent').oninput = render;
 async function reload(btn) {
   if (btn.classList.contains('spin')) return;
   btn.classList.add('spin');
@@ -516,7 +590,7 @@ async function reload(btn) {
   btn.classList.remove('spin');
 }
 document.querySelectorAll('.rf').forEach((b) => (b.onclick = () => reload(b)));
-$('#q').oninput = render; $('#bsave').onclick = saveSettings; $('#bout').onclick = signOut; $('#lb').onclick = login;
+$('#q').oninput = render; if ($('#sq_sent')) $('#sq_sent').oninput = render; $('#bsave').onclick = saveSettings; $('#bout').onclick = signOut; $('#lb').onclick = login;
 $('#lp').onkeydown = (e) => { if (e.key === 'Enter') login(); };
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 if (T) start().catch(() => {}); else $('#login').hidden = false;
