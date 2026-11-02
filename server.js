@@ -188,13 +188,14 @@ Reply ONLY with JSON: {"subject":"...","body":"..."}`;
 
 async function generateDrafts(count) {
   const db = load();
-  const todo = db.leads.filter((l) => l.status === 'new').slice(0, count);
+  const todo = db.leads.filter((l) => ['new', 'failed'].includes(l.status) && !l.body).slice(0, count);
   for (const l of todo) {
     try {
       const d = await draftFor(l);
       l.subject = d.subject; l.body = d.body; l.status = 'drafted'; delete l.error;
     } catch (e) { l.error = 'Draft failed: ' + e.message; }
     save(db);
+    await sleep(1500); // pause so Groq TPM rate limit is never exceeded
   }
   return todo.length;
 }
@@ -203,7 +204,7 @@ app.post('/api/generate', async (req, res) => {
   res.json({ drafted: await generateDrafts(Number(req.body.count) || S().daily) });
 });
 
-// ---------- sending ----------
+// ---------- sending (Resend HTTPS API or Zoho Nodemailer fallback) ----------
 const mailer = () => {
   const host = (E.SMTP_HOST === 'smtp.zoho.com' ? 'smtp.zoho.in' : E.SMTP_HOST) || 'smtp.zoho.in';
   const port = Number(E.SMTP_PORT) || 465;
@@ -218,21 +219,60 @@ const mailer = () => {
   });
 };
 
+async function sendEmail({ to, subject, text }) {
+  if (E.RESEND_API_KEY) {
+    const fromEmail = E.SENDER_EMAIL || E.SMTP_USER || 'zahid@zynteqtechnologies.com';
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'authorization': 'Bearer ' + E.RESEND_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `"${S().name} - ${S().company}" <${fromEmail}>`,
+        to: [to],
+        reply_to: fromEmail,
+        subject,
+        text,
+      }),
+    });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+    return j;
+  }
+
+  // Fallback to Nodemailer SMTP
+  const t = mailer();
+  return await t.sendMail({
+    from: `"${S().name} - ${S().company}" <${E.SMTP_USER}>`,
+    to,
+    subject,
+    text,
+  });
+}
+
 app.post('/api/send-all', async (req, res) => {
   const db = load();
-  const t = mailer();
   let sent = 0, failed = 0;
-  for (const l of db.leads.filter((x) => x.status === 'drafted')) {
+  const queue = db.leads.filter((x) => ['drafted', 'failed'].includes(x.status) && x.body);
+  for (const l of queue) {
     try {
-      await t.sendMail({
-        from: `"${S().name} - ${S().company}" <${E.SMTP_USER}>`,
-        to: l.email, subject: l.subject,
+      await sendEmail({
+        to: l.email,
+        subject: l.subject,
         text: `${l.body}\n\n--\n${S().name}\n${S().company}\nIf you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.`,
       });
-      l.status = 'sent'; l.sentAt = new Date().toISOString(); delete l.error; sent++;
-    } catch (e) { l.status = 'failed'; l.error = e.message; failed++; }
+      l.status = 'sent';
+      l.sentAt = new Date().toISOString();
+      delete l.error;
+      sent++;
+    } catch (e) {
+      l.status = 'failed';
+      l.error = e.message;
+      failed++;
+    }
     save(db);
-    await sleep(8000); // slow sending protects your email reputation
+    await sleep(2000); // 2s spacing protects deliverability
   }
   res.json({ sent, failed });
 });

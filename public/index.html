@@ -155,13 +155,15 @@ const count = (s) => L.filter((l) => l.status === s).length;
 const chip = (s) => `<span class="chip ${s}">${LABEL[s] || s}</span>`;
 
 function render() {
-  $('#n-ready').textContent = count('drafted'); $('#n-wait').textContent = count('new'); $('#n-sent').textContent = count('sent');
-  $('#bsend').textContent = count('drafted') ? `Send all ${count('drafted')} emails` : 'Send all';
+  const readyCount = L.filter((l) => ['drafted', 'failed'].includes(l.status) && l.body).length;
+  $('#n-ready').textContent = readyCount; $('#n-wait').textContent = count('new'); $('#n-sent').textContent = count('sent');
+  $('#bsend').textContent = readyCount ? `Send all ${readyCount} emails` : 'Send all';
   const d = L.filter((l) => ['drafted', 'failed'].includes(l.status));
   $('#drafts').innerHTML = d.length ? d.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}${l.city ? ' · ' + esc(l.city) : ''}</div></div>${chip(l.status)}</div>
     ${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}
     <textarea class="in" style="min-height:46px;height:46px;margin-top:10px;padding-top:11px" aria-label="Subject" onchange="edit('${esc(l.id)}',{subject:this.value})">${esc(l.subject)}</textarea>
     <textarea class="in" aria-label="Message" onchange="edit('${esc(l.id)}',{body:this.value})">${esc(l.body)}</textarea>
+    ${l.status === 'failed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','drafted')">Reset</button>` : ''}
     <button class="btn sm" onclick="setStatus('${esc(l.id)}','skipped')">Discard</button></div>`).join('')
     : '<div class="empty">No drafts yet.<br>Tap “Find clients”, then “Make drafts”.</div>';
   const s = L.filter((l) => ['sent', 'failed'].includes(l.status) && (filt === 'all' || l.status === filt))
@@ -193,10 +195,10 @@ $('#bfind').onclick = () => {
 };
 $('#bgen').onclick = () => run($('#bgen'), 'Writing…', async () => { const r = await api('/api/generate', 'POST', { count: ST.daily }); toast(`${r.drafted} drafts ready`); });
 $('#bsend').onclick = () => {
-  const n = count('drafted');
+  const n = L.filter((l) => ['drafted', 'failed'].includes(l.status) && l.body).length;
   if (!n) return toast('No drafts to send');
   if (!confirm(`Send ${n} emails now?`)) return;
-  run($('#bsend'), 'Sending… keep this open', async () => { const r = await api('/api/send-all', 'POST'); toast(`Sent ${r.sent}, failed ${r.failed}`); });
+  run($('#bsend'), 'Sending... keep this open', async () => { const r = await api('/api/send-all', 'POST'); toast(`Sent ${r.sent}, failed ${r.failed}`); });
 };
 function parseCSV(t) {
   const rows = []; let row = [], c = '', q = false;
