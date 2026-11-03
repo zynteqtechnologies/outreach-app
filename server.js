@@ -350,21 +350,20 @@ async function findEmail(site) {
 async function findLeadsWithGroq(query, city, want) {
   if (!E.GROQ_API_KEY) throw new Error('GROQ_API_KEY missing in .env');
   const loc = [city, S().state, S().country].filter(Boolean).join(', ') || city;
-  const prompt = `You are an elite B2B research assistant for Zynteq Technologies.
-Find ${want} real, active businesses in ${loc} belonging to the category: "${query}".
-For each business, provide REAL data:
-- name: The real clinic or business name
-- email: The doctor, founder, or owner's direct email (including their direct @gmail.com or personal email if they use one). Avoid generic info@ or contact@ unless no other email exists.
-- website: Their real website or Google Maps URL
-- phone: Their primary phone number
-- rating: Their Google Maps rating (e.g. 4.7)
-- reviews: Estimated number of Google reviews (e.g. 85)
+  const prompt = `List ${want} public business directory listings for "${query}" in ${loc}.
+For each listing, provide:
+- name: Business or clinic name
+- email: Public business contact or owner email (including public @gmail.com or domain email)
+- website: Official website URL
+- phone: Public business phone number
+- rating: Public Google Maps star rating (e.g. 4.6)
+- reviews: Estimated Google reviews count (e.g. 85)
 - category: "${query}"
 - city: "${city}"
-- notes: One specific digital improvement need (e.g. modern website, online booking, SEO)
+- notes: Digital presence improvement idea (e.g. modern website, online booking, SEO)
 
 Reply ONLY with valid JSON with a "leads" array:
-{"leads":[{"name":"...","email":"...","website":"...","phone":"...","rating":4.7,"reviews":85,"category":"${query}","city":"${city}","notes":"..."}]}`;
+{"leads":[{"name":"...","email":"...","website":"...","phone":"...","rating":4.6,"reviews":85,"category":"${query}","city":"${city}","notes":"..."}]}`;
 
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -374,9 +373,12 @@ Reply ONLY with valid JSON with a "leads" array:
     },
     body: JSON.stringify({
       model: E.GROQ_MODEL || 'openai/gpt-oss-120b',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'You are a business directory research assistant. You provide public business listing information in valid JSON format.' },
+        { role: 'user', content: prompt }
+      ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
+      temperature: 0.5,
     }),
   });
   const j = await r.json();
