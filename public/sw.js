@@ -1,4 +1,4 @@
-const C = 'outreach-v7';
+const C = 'outreach-v8';
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(C).then((c) => c.addAll(['/', '/manifest.json', '/outreach-logo.svg', '/icon-192.png', '/icon-512.png'])));

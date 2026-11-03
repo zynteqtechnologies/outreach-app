@@ -54,7 +54,10 @@ app.post('/api/webhook/leads', async (req, res) => {
       id: Date.now() + '-w' + added,
       name: r.name || '',
       email,
-      website: r.website || '',
+      website: r.website || r.maps_url || '',
+      phone: r.phone || r.phone_number || '',
+      rating: Number(r.rating) || null,
+      reviews: Number(r.reviews || r.user_ratings_total || r.review_count) || null,
       category: r.category || '',
       city: r.city || '',
       notes: r.notes || r.requirement || '',
@@ -125,7 +128,11 @@ app.post('/api/import', (req, res) => {
     have.add(email);
     db.leads.push({
       id: Date.now() + '-' + added,
-      name: r.name || '', email, website: r.website || '',
+      name: r.name || '', email,
+      website: r.website || '',
+      phone: r.phone || '',
+      rating: Number(r.rating) || null,
+      reviews: Number(r.reviews || r.review_count || r.user_ratings_total) || null,
       category: r.category || '', city: r.city || '', notes: r.notes || '',
       status: 'new',
     });
@@ -162,11 +169,13 @@ async function draftFor(lead) {
   const web = await siteText(lead.website);
   const conf = S();
   const titlePart = conf.role ? `, ${conf.role} at ${conf.company}` : ` at ${conf.company}`;
+  const ratingInfo = lead.rating ? `Google Reputation: ${lead.rating}★ rating (${lead.reviews || 'many'} Google reviews)` : '';
   const prompt = `Write a short, friendly cold email (max 110 words) from ${conf.name}${titlePart}, who offers: ${conf.service}.
 Recipient business: ${lead.name} | Category: ${lead.category} | City: ${lead.city}
-Notes: ${lead.notes}
+${ratingInfo}
+Notes: ${lead.notes || ''}
 Text from their website: ${web || '(not available)'}
-Rules: mention one specific, true detail about their business; do not invent facts; one clear low-pressure call to action (a quick reply or call); no hype, no emojis; do not add a signature or unsubscribe line (added automatically).
+Rules: mention one specific, true detail about their business (such as their strong Google reputation or service); do not invent facts; one clear low-pressure call to action (a quick reply or call); no hype, no emojis; do not add a signature or unsubscribe line (added automatically).
 Reply ONLY with JSON: {"subject":"...","body":"..."}`;
   if (E.GROQ_API_KEY) {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -297,18 +306,36 @@ app.post('/api/send-all', async (req, res) => {
 
 // ---------- automatic client finding (Google Places + website email) ----------
 const BAD = /\.(png|jpe?g|gif|svg|webp|css|js)$|sentry|wixpress|example\.|domain\.com|your@|@2x|noreply|no-reply/i;
+
+function scoreEmail(email, host) {
+  const e = email.toLowerCase();
+  const [user, domain] = e.split('@');
+  let score = 10;
+  // Doctor, founder, owner, director, partner
+  if (/^(dr|doctor|founder|ceo|owner|director|partner|head|principal)/i.test(user)) score += 40;
+  // Generic roles to avoid if better email exists
+  const isGeneric = /^(info|contact|sales|hello|support|admin|office|mail|frontdesk|help|inquiry|inquiries|marketing|billing)$/i.test(user);
+  if (!isGeneric) score += 20;
+  // In India & local markets, business owners directly use and check Gmail/Yahoo on their mobile phones!
+  if (['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'].includes(domain)) score += 15;
+  else if (host && (domain === host || domain.endsWith('.' + host))) score += 10;
+  if (isGeneric) score -= 15;
+  return score;
+}
+
 async function getPage(url) {
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { 'user-agent': 'Mozilla/5.0' } });
     return await r.text();
   } catch { return ''; }
 }
+
 async function findEmail(site) {
   let base;
   try { base = new URL(/^https?:/.test(site) ? site : 'https://' + site); } catch { return null; }
   const host = base.hostname.replace(/^www\./, '');
   const found = new Set();
-  for (const p of ['/', '/contact', '/contact-us', '/about']) {
+  for (const p of ['/', '/contact', '/contact-us', '/about', '/about-us']) {
     const html = (await getPage(new URL(p, base).href)).replace(/&#64;|\[at\]/gi, '@');
     (html.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) || []).forEach((e) => {
       e = e.toLowerCase();
@@ -316,24 +343,28 @@ async function findEmail(site) {
     });
     if (found.size) break;
   }
-  const list = [...found];
-  return list.find((e) => e.endsWith('@' + host) || e.endsWith('.' + host)) || list[0] || null;
+  const list = [...found].sort((a, b) => scoreEmail(b, host) - scoreEmail(a, host));
+  return list[0] || null;
 }
+
 async function findLeadsWithGroq(query, city, want) {
   if (!E.GROQ_API_KEY) throw new Error('GROQ_API_KEY missing in .env');
   const loc = [city, S().state, S().country].filter(Boolean).join(', ') || city;
-  const prompt = `You are a B2B business researcher for Zynteq Technologies.
+  const prompt = `You are an elite B2B research assistant for Zynteq Technologies.
 Find ${want} real, active businesses in ${loc} belonging to the category: "${query}".
-For each business, provide:
-- name: The real business or clinic name
-- email: Official contact email
-- website: Their website URL
+For each business, provide REAL data:
+- name: The real clinic or business name
+- email: The doctor, founder, or owner's direct email (including their direct @gmail.com or personal email if they use one). Avoid generic info@ or contact@ unless no other email exists.
+- website: Their real website or Google Maps URL
+- phone: Their primary phone number
+- rating: Their Google Maps rating (e.g. 4.7)
+- reviews: Estimated number of Google reviews (e.g. 85)
 - category: "${query}"
 - city: "${city}"
 - notes: One specific digital improvement need (e.g. modern website, online booking, SEO)
 
 Reply ONLY with valid JSON with a "leads" array:
-{"leads":[{"name":"...","email":"...","website":"...","category":"${query}","city":"${city}","notes":"..."}]}`;
+{"leads":[{"name":"...","email":"...","website":"...","phone":"...","rating":4.7,"reviews":85,"category":"${query}","city":"${city}","notes":"..."}]}`;
 
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -366,6 +397,9 @@ Reply ONLY with valid JSON with a "leads" array:
       name: item.name || '',
       email,
       website: item.website || '',
+      phone: item.phone || '',
+      rating: Number(item.rating) || null,
+      reviews: Number(item.reviews) || null,
       category: item.category || query,
       city: item.city || city,
       notes: item.notes || '',
@@ -395,7 +429,7 @@ async function findLeads(query, city, want) {
       headers: {
         'content-type': 'application/json',
         'X-Goog-Api-Key': E.GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.websiteUri,nextPageToken',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.websiteUri,places.rating,places.userRatingCount,places.nationalPhoneNumber,places.googleMapsUri,nextPageToken',
       },
       body: JSON.stringify(body),
     });
@@ -410,8 +444,17 @@ async function findLeads(query, city, want) {
       if (!email || have.has(email)) continue;
       have.add(email);
       db.leads.push({
-        id: Date.now() + '-f' + added, name: (p.displayName && p.displayName.text) || '', email,
-        website: p.websiteUri, category: query, city, notes: '', status: 'new',
+        id: Date.now() + '-f' + added,
+        name: (p.displayName && p.displayName.text) || '',
+        email,
+        website: p.websiteUri || p.googleMapsUri || '',
+        phone: p.nationalPhoneNumber || '',
+        rating: p.rating || null,
+        reviews: p.userRatingCount || null,
+        category: query,
+        city,
+        notes: '',
+        status: 'new',
       });
       added++;
     }

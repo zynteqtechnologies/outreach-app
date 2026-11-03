@@ -198,7 +198,11 @@ function render() {
   $('#n-ready').textContent = readyCount; $('#n-wait').textContent = count('new'); $('#n-sent').textContent = count('sent');
   $('#bsend').textContent = readyCount ? `Send all ${readyCount} emails` : 'Send all';
   const d = L.filter((l) => ['drafted', 'failed'].includes(l.status));
-  $('#drafts').innerHTML = d.length ? d.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3><div class="mu">${esc(l.email)}${l.city ? ' · ' + esc(l.city) : ''}</div></div>${chip(l.status)}</div>
+  $('#drafts').innerHTML = d.length ? d.map((l) => `<div class="card"><div class="top"><div><h3>${esc(l.name || l.email)}</h3>
+    <div class="mu">${esc(l.email)}${l.city ? ' · ' + esc(l.city) : ''}</div>
+    ${l.rating ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;margin-top:5px">⭐ ${esc(String(l.rating))} (${esc(String(l.reviews || 0))} Google reviews) • Verified Business</div>` : ''}
+    ${l.phone ? `<div style="font-size:12px;color:var(--mu);margin-top:3px">📞 ${esc(l.phone)}</div>` : ''}
+  </div>${chip(l.status)}</div>
     ${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}
     <textarea class="in" style="min-height:46px;height:46px;margin-top:10px;padding-top:11px" aria-label="Subject" onchange="edit('${esc(l.id)}',{subject:this.value})">${esc(l.subject)}</textarea>
     <textarea class="in" aria-label="Message" onchange="edit('${esc(l.id)}',{body:this.value})">${esc(l.body)}</textarea>
@@ -232,6 +236,7 @@ function render() {
             To: <a href="mailto:${esc(l.email)}" style="color:inherit;font-weight:600">${esc(l.email)}</a>
             ${l.city ? ' · 📍 ' + esc(l.city) : ''}
           </div>
+          ${l.rating ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin-top:4px">⭐ ${esc(String(l.rating))} (${esc(String(l.reviews || 0))} reviews)</div>` : ''}
           ${l.sentAt ? `<div class="mu" style="font-size:12px;margin-top:2px">📅 Sent: ${new Date(l.sentAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>` : ''}
         </div>
         ${chip(l.status)}
@@ -267,7 +272,9 @@ function render() {
             <a href="mailto:${esc(l.email)}" style="color:inherit;font-weight:600">${esc(l.email)}</a>
             ${l.city ? ' · 📍 ' + esc(l.city) : ''}
           </div>
-          ${l.category ? `<div style="font-size:12px;color:var(--ac);font-weight:600;margin-top:2px">🏷️ ${esc(l.category)}</div>` : ''}
+          ${l.rating ? `<div style="display:inline-flex;align-items:center;gap:5px;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;margin-top:5px">⭐ ${esc(String(l.rating))} (${esc(String(l.reviews || 0))} Google reviews) • Verified Business</div>` : ''}
+          ${l.phone ? `<div style="font-size:12px;color:var(--mu);margin-top:3px">📞 ${esc(l.phone)}</div>` : ''}
+          ${l.category ? `<div style="font-size:12px;color:var(--ac);font-weight:600;margin-top:3px">🏷️ ${esc(l.category)}</div>` : ''}
         </div>
         ${chip(l.status)}
       </div>
