@@ -140,6 +140,8 @@ nav svg,.logo svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:
   <div class="row"><div class="f" style="flex:1"><label for="sd">Emails per day</label><input class="in" id="sd" type="number" min="1" max="30"></div><div class="f" style="flex:1"><label for="st">Send time</label><input class="in" id="st" type="time"></div></div>
   <div class="f"><label for="sn">Your name</label><input class="in" id="sn"></div>
   <div class="f"><label for="so">Company</label><input class="in" id="so"></div>
+  <div class="f"><label for="sph">Phone number (in email footer)</label><input class="in" id="sph" placeholder="+91 97268 05104"></div>
+  <div class="f"><label for="swb">Company website (in email footer)</label><input class="in" id="swb" placeholder="https://zynteqtechnologies.com"></div>
   <div class="f">
     <label for="sv_sel">Your service</label>
     <select class="in" id="sv_sel"></select>
@@ -197,8 +199,19 @@ function render() {
     ${l.error ? `<div class="err">${esc(l.error)}</div>` : ''}
     <textarea class="in" style="min-height:46px;height:46px;margin-top:10px;padding-top:11px" aria-label="Subject" onchange="edit('${esc(l.id)}',{subject:this.value})">${esc(l.subject)}</textarea>
     <textarea class="in" aria-label="Message" onchange="edit('${esc(l.id)}',{body:this.value})">${esc(l.body)}</textarea>
-    ${l.status === 'failed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','drafted')">Reset</button>` : ''}
-    <button class="btn sm" onclick="setStatus('${esc(l.id)}','skipped')">Discard</button></div>`).join('')
+    <div style="margin-top:8px;padding:10px 12px;background:var(--tile);border-radius:10px;font-size:12px;color:var(--tx);line-height:1.5;border:1px dashed var(--ln)">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--ac)">✉️ Email Footer (sent with email):</div>
+      --<br>
+      <b>${esc(ST.name || 'Zahid')}</b><br>
+      <b>${esc(ST.company || 'Zynteq Technologies')}</b><br>
+      ${ST.phone ? `📞 Phone: <b>${esc(ST.phone)}</b><br>` : ''}
+      🌐 Website: <a href="${esc(ST.website || 'https://zynteqtechnologies.com')}" target="_blank" style="color:var(--ac);font-weight:600">${esc(ST.website || 'https://zynteqtechnologies.com')}</a><br>
+      <span style="color:var(--mu);font-size:11px;margin-top:2px;display:inline-block">If you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.</span>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:6px">
+      ${l.status === 'failed' ? `<button class="btn sm" onclick="setStatus('${esc(l.id)}','drafted')">Reset</button>` : ''}
+      <button class="btn sm" onclick="setStatus('${esc(l.id)}','skipped')">Discard</button>
+    </div></div>`).join('')
     : '<div class="empty">No drafts yet.<br>Tap “Find clients”, then “Make drafts”.</div>';
   const sqSent = ($('#sq_sent') ? $('#sq_sent').value : '').trim().toLowerCase();
   const s = L.filter((l) => ['sent', 'failed'].includes(l.status) &&
@@ -513,8 +526,10 @@ function fillSettings() {
 
   $('#sd').value = ST.daily || 10;
   $('#st').value = ST.time || '10:00';
-  $('#sn').value = ST.name || '';
-  $('#so').value = ST.company || '';
+  $('#sn').value = ST.name || 'Zahid';
+  $('#so').value = ST.company || 'Zynteq Technologies';
+  $('#sph').value = ST.phone || '';
+  $('#swb').value = ST.website || 'https://zynteqtechnologies.com';
 }
 
 async function saveSettings() {
@@ -530,6 +545,8 @@ async function saveSettings() {
     time: $('#st').value,
     name: $('#sn').value,
     company: $('#so').value,
+    phone: $('#sph').value.trim(),
+    website: $('#swb').value.trim(),
   });
   fillSettings();
   toast('Settings saved');

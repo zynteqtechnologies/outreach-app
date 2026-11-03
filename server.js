@@ -82,10 +82,17 @@ app.use('/api', (req, res, next) => {
 function S() {
   const s = load().settings || {};
   return {
-    name: s.name || E.SENDER_NAME || '', company: s.company || E.COMPANY || '', service: s.service || E.SERVICE || '',
-    query: s.query || E.TARGET_QUERY || '', city: s.city || E.TARGET_CITY || '',
-    state: s.state || '', country: s.country || '',
-    daily: Number(s.daily || E.DAILY_COUNT) || 10, time: s.time || '10:00',
+    name: s.name || E.SENDER_NAME || 'Zahid',
+    company: s.company || E.COMPANY || 'Zynteq Technologies',
+    phone: s.phone || E.PHONE || '',
+    website: s.website || E.COMPANY_WEBSITE || 'https://zynteqtechnologies.com',
+    service: s.service || E.SERVICE || '',
+    query: s.query || E.TARGET_QUERY || '',
+    city: s.city || E.TARGET_CITY || '',
+    state: s.state || '',
+    country: s.country || '',
+    daily: Number(s.daily || E.DAILY_COUNT) || 10,
+    time: s.time || '10:00',
   };
 }
 app.get('/api/settings', (req, res) => res.json(S()));
@@ -94,6 +101,7 @@ app.put('/api/settings', (req, res) => {
   db.settings = {
     name: b.name, company: b.company, service: b.service, query: b.query, city: b.city,
     state: b.state, country: b.country,
+    phone: b.phone || '', website: b.website || 'https://zynteqtechnologies.com',
     daily: Math.min(Math.max(Number(b.daily) || 10, 1), 30), time: /^\d\d:\d\d$/.test(b.time) ? b.time : '10:00',
   };
   save(db);
@@ -256,10 +264,14 @@ app.post('/api/send-all', async (req, res) => {
   const queue = db.leads.filter((x) => ['drafted', 'failed'].includes(x.status) && x.body);
   for (const l of queue) {
     try {
+      const conf = S();
+      const phoneLine = conf.phone ? `\nPhone: ${conf.phone}` : '';
+      const webLine = conf.website ? `\nWebsite: ${conf.website}` : '';
+      const fullBody = `${l.body}\n\n--\n${conf.name}\n${conf.company}${phoneLine}${webLine}\n\nIf you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.`;
       await sendEmail({
         to: l.email,
         subject: l.subject,
-        text: `${l.body}\n\n--\n${S().name}\n${S().company}\nIf you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.`,
+        text: fullBody,
       });
       l.status = 'sent';
       l.sentAt = new Date().toISOString();
