@@ -82,7 +82,8 @@ app.use('/api', (req, res, next) => {
 function S() {
   const s = load().settings || {};
   return {
-    name: s.name || E.SENDER_NAME || 'Zahid',
+    name: s.name || E.SENDER_NAME || 'Zahid Qureshi',
+    role: s.role || 'Founder & CTO',
     company: s.company || E.COMPANY || 'Zynteq Technologies',
     phone: s.phone || E.PHONE || '',
     website: s.website || E.COMPANY_WEBSITE || 'https://zynteqtechnologies.com',
@@ -99,7 +100,10 @@ app.get('/api/settings', (req, res) => res.json(S()));
 app.put('/api/settings', (req, res) => {
   const db = load(), b = req.body || {};
   db.settings = {
-    name: b.name, company: b.company, service: b.service, query: b.query, city: b.city,
+    name: b.name || 'Zahid Qureshi',
+    role: b.role || 'Founder & CTO',
+    company: b.company || 'Zynteq Technologies',
+    service: b.service, query: b.query, city: b.city,
     state: b.state, country: b.country,
     phone: b.phone || '', website: b.website || 'https://zynteqtechnologies.com',
     daily: Math.min(Math.max(Number(b.daily) || 10, 1), 30), time: /^\d\d:\d\d$/.test(b.time) ? b.time : '10:00',
@@ -156,7 +160,9 @@ async function siteText(url) {
 
 async function draftFor(lead) {
   const web = await siteText(lead.website);
-  const prompt = `Write a short, friendly cold email (max 110 words) from ${S().name} at ${S().company}, who offers: ${S().service}.
+  const conf = S();
+  const titlePart = conf.role ? `, ${conf.role} at ${conf.company}` : ` at ${conf.company}`;
+  const prompt = `Write a short, friendly cold email (max 110 words) from ${conf.name}${titlePart}, who offers: ${conf.service}.
 Recipient business: ${lead.name} | Category: ${lead.category} | City: ${lead.city}
 Notes: ${lead.notes}
 Text from their website: ${web || '(not available)'}
@@ -265,9 +271,10 @@ app.post('/api/send-all', async (req, res) => {
   for (const l of queue) {
     try {
       const conf = S();
+      const roleLine = conf.role ? `${conf.role} | ` : '';
       const phoneLine = conf.phone ? `\nPhone: ${conf.phone}` : '';
       const webLine = conf.website ? `\nWebsite: ${conf.website}` : '';
-      const fullBody = `${l.body}\n\n--\n${conf.name}\n${conf.company}${phoneLine}${webLine}\n\nIf you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.`;
+      const fullBody = `${l.body}\n\n--\n${conf.name}\n${roleLine}${conf.company}${phoneLine}${webLine}\n\nIf you'd rather not hear from us, just reply "unsubscribe" and we won't email you again.`;
       await sendEmail({
         to: l.email,
         subject: l.subject,
