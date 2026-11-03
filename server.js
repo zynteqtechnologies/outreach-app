@@ -64,16 +64,13 @@ app.post('/api/webhook/leads', async (req, res) => {
   }
   save(db);
 
-  let drafted = 0;
-  if (added > 0) {
-    try {
-      drafted = await generateDrafts(added);
-    } catch (e) {
-      console.error('[webhook] Auto-draft error:', e.message);
-    }
-  }
+  // Respond immediately so Make.com never times out!
+  res.json({ success: true, added, message: 'Leads received, drafting started in background' });
 
-  res.json({ success: true, added, drafted });
+  // Generate AI drafts in the background asynchronously
+  if (added > 0) {
+    generateDrafts(added).catch((e) => console.error('[webhook] Auto-draft error:', e.message));
+  }
 });
 app.use('/api', (req, res, next) => {
   const [exp, sig] = (req.get('authorization') || '').replace('Bearer ', '').split('.');
