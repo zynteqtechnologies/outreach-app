@@ -150,6 +150,15 @@ nav svg,.logo svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:
     <select class="in" id="sv_sel"></select>
     <textarea class="in" id="sv_custom" placeholder="Type custom service description..." style="display:none;margin-top:6px;min-height:90px"></textarea>
   </div>
+  <div class="f" style="margin-top:4px;padding:12px;background:var(--tile);border-radius:12px;border:1px solid var(--ln)">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;font-size:14px;color:var(--tx)">
+      <input type="checkbox" id="sbcc" style="width:20px;height:20px;accent-color:var(--ac);cursor:pointer">
+      <span>📥 Send a copy to my Zoho inbox (BCC)</span>
+    </label>
+    <div class="mu" style="font-size:12px;margin-top:4px;margin-left:30px;line-height:1.4">
+      Every email sent will automatically be copied to <b id="sbcc_email">zahid@zynteqtechnologies.com</b> so you see it in Zoho Mail and replies thread directly under it.
+    </div>
+  </div>
   <button class="btn pri" id="bsave" style="flex:none;width:100%;min-height:52px;font-size:16px">Save settings</button>
   <p class="mu" style="font-size:12px">Your email password and API keys stay private on your server, never in the app.</p>
   <button class="btn" id="bout" style="flex:none;width:100%;margin-top:8px">Sign out</button>
@@ -541,6 +550,8 @@ function fillSettings() {
   $('#so').value = ST.company || 'Zynteq Technologies';
   $('#sph').value = ST.phone || '';
   $('#swb').value = ST.website || 'https://zynteqtechnologies.com';
+  if ($('#sbcc')) $('#sbcc').checked = ST.bcc_copy !== false;
+  if ($('#sbcc_email') && ST.sender_email) $('#sbcc_email').textContent = ST.sender_email;
 }
 
 async function saveSettings() {
@@ -559,6 +570,7 @@ async function saveSettings() {
     company: $('#so').value.trim(),
     phone: $('#sph').value.trim(),
     website: $('#swb').value.trim(),
+    bcc_copy: $('#sbcc') ? $('#sbcc').checked : true,
   });
   fillSettings();
   toast('Settings saved');

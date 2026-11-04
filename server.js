@@ -97,6 +97,8 @@ function S() {
     country: s.country || '',
     daily: Number(s.daily || E.DAILY_COUNT) || 10,
     time: s.time || '10:00',
+    bcc_copy: s.bcc_copy !== undefined ? Boolean(s.bcc_copy) : true,
+    sender_email: E.SENDER_EMAIL || E.SMTP_USER || 'zahid@zynteqtechnologies.com',
   };
 }
 app.get('/api/settings', (req, res) => res.json(S()));
@@ -110,6 +112,7 @@ app.put('/api/settings', (req, res) => {
     state: b.state, country: b.country,
     phone: b.phone || '', website: b.website || 'https://zynteqtechnologies.com',
     daily: Math.min(Math.max(Number(b.daily) || 10, 1), 30), time: /^\d\d:\d\d$/.test(b.time) ? b.time : '10:00',
+    bcc_copy: b.bcc_copy !== undefined ? Boolean(b.bcc_copy) : true,
   };
   save(db);
   res.json(S());
@@ -242,21 +245,26 @@ const mailer = () => {
 };
 
 async function sendEmail({ to, subject, text }) {
+  const conf = S();
+  const fromEmail = conf.sender_email || E.SENDER_EMAIL || E.SMTP_USER || 'zahid@zynteqtechnologies.com';
   if (E.RESEND_API_KEY) {
-    const fromEmail = E.SENDER_EMAIL || E.SMTP_USER || 'zahid@zynteqtechnologies.com';
+    const payload = {
+      from: `"${conf.name} - ${conf.company}" <${fromEmail}>`,
+      to: [to],
+      reply_to: fromEmail,
+      subject,
+      text,
+    };
+    if (conf.bcc_copy) {
+      payload.bcc = [fromEmail];
+    }
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'authorization': 'Bearer ' + E.RESEND_API_KEY,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        from: `"${S().name} - ${S().company}" <${fromEmail}>`,
-        to: [to],
-        reply_to: fromEmail,
-        subject,
-        text,
-      }),
+      body: JSON.stringify(payload),
     });
     const j = await r.json();
     if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
@@ -265,12 +273,16 @@ async function sendEmail({ to, subject, text }) {
 
   // Fallback to Nodemailer SMTP
   const t = mailer();
-  return await t.sendMail({
-    from: `"${S().name} - ${S().company}" <${E.SMTP_USER}>`,
+  const mailOpts = {
+    from: `"${conf.name} - ${conf.company}" <${E.SMTP_USER}>`,
     to,
     subject,
     text,
-  });
+  };
+  if (conf.bcc_copy) {
+    mailOpts.bcc = fromEmail;
+  }
+  return await t.sendMail(mailOpts);
 }
 
 app.post('/api/send-all', async (req, res) => {
